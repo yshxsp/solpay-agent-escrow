@@ -1,0 +1,23 @@
+{
+  "name": "solpay-agent-escrow",
+  "version": "1.0.0",
+  "description": "Autonomous AI Agent Payment & Milestone Escrow Protocol on Solana",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "demo": "node --loader ts-node/esm src/demo.ts",
+    "test": "node --test"
+  },
+  "keywords": ["solana", "ai-agents", "escrow", "usdc", "web3", "superteam-ukraine"],
+  "author": "Dmytro Filonenko (@yshxspX)",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
