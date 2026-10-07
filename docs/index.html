@@ -47,9 +47,36 @@
     .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
     .custom-scroll::-webkit-scrollbar-track { background: #080A0F; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #2A3347; border-radius: 2px; }
+
+    @keyframes activePulseBorder {
+      0%, 100% { border-color: rgba(16,185,129,0.3); box-shadow: 0 0 15px rgba(16,185,129,0.15); }
+      50% { border-color: rgba(6,182,212,0.85); box-shadow: 0 0 30px rgba(6,182,212,0.35); }
+    }
+    .active-pulse-card {
+      animation: activePulseBorder 1.5s infinite ease-in-out !important;
+    }
+
+    @keyframes barGlow {
+      0%, 100% { filter: drop-shadow(0 0 3px rgba(16,185,129,0.5)); }
+      50% { filter: drop-shadow(0 0 10px rgba(6,182,212,0.9)); }
+    }
+    .bar-glow {
+      animation: barGlow 2s infinite ease-in-out;
+    }
   </style>
 </head>
 <body class="min-h-screen selection:bg-signal-orange selection:text-white font-sans antialiased text-sm">
+
+  <!-- Virtual Agent Autopilot Cursor (High-Visibility Animated Pointer) -->
+  <div id="virtualCursor" class="fixed z-[99999] pointer-events-none transition-all duration-300 ease-out flex items-center space-x-2" style="top: -100px; left: -100px; display: none;">
+    <div class="relative">
+      <svg class="w-6 h-6 drop-shadow-[0_0_12px_rgba(255,90,31,1)] filter" viewBox="0 0 24 24" fill="none">
+        <path d="M4 2L20 10L12 12L10 20L4 2Z" fill="#FF5A1F" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      <div id="cursorWave" class="absolute -top-3 -left-3 w-12 h-12 rounded-full border-2 border-signal-orange opacity-0 pointer-events-none"></div>
+    </div>
+    <div class="bg-chassis-950/95 text-[10px] font-mono px-2 py-0.5 rounded border border-signal-orange text-signal-orange shadow-2xl font-bold tracking-wide" id="cursorLabel">Agent Autopilot</div>
+  </div>
 
   <!-- Instrument Top Bar -->
   <header class="border-b border-chassis-800 bg-chassis-950/95 sticky top-0 z-50 backdrop-blur-md">
@@ -183,6 +210,21 @@
         </div>
       </div>
 
+      <!-- Contract Lifecycle Progress Track -->
+      <div class="space-y-1.5 pb-2 border-b border-chassis-800">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-signal-orange animate-pulse"></span>
+            <span>Escrow Lifecycle Pipeline:</span>
+            <span id="lifecycleStageText" class="text-white font-semibold">Stage 0/3 (Idle)</span>
+          </span>
+          <span id="lifecyclePercentText" class="text-signal-mint font-bold mono-tabular">0% Settled</span>
+        </div>
+        <div class="w-full bg-chassis-950 rounded-full h-2.5 border border-chassis-800 overflow-hidden p-0.5">
+          <div id="contractOverallBar" class="h-full rounded-full bg-gradient-to-r from-signal-orange via-signal-cyan to-signal-mint transition-all duration-700 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+
       <!-- Agent Balances Telemetry Grid -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
         <div class="recessed-well p-3.5 rounded border border-chassis-800 space-y-1.5">
@@ -221,65 +263,80 @@
         </div>
 
         <!-- M1 Card -->
-        <div class="recessed-well p-4 rounded border border-chassis-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors" id="mCard1">
-          <div class="space-y-1">
-            <div class="flex items-center space-x-2.5">
-              <span class="font-mono text-xs font-bold text-signal-orange">01</span>
-              <span class="font-medium text-white text-xs">Architecture scaffolding & Anchor account serialization</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge1">LOCKED</span>
+        <div class="recessed-well p-4 rounded border border-chassis-800 flex flex-col gap-2 transition-all duration-300" id="mCard1">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2.5">
+                <span class="font-mono text-xs font-bold text-signal-orange">01</span>
+                <span class="font-medium text-white text-xs">Architecture scaffolding & Anchor account serialization</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge1">LOCKED</span>
+              </div>
+              <div class="text-[11px] font-mono text-slate-500 flex items-center space-x-2">
+                <span id="mDigest1">Awaiting execution</span>
+                <button onclick="inspectMilestone(1)" class="text-slate-400 hover:text-signal-orange underline text-[10px] transition-colors" id="mInspectBtn1" style="display:none;">
+                  [Inspect Deliverable Proof]
+                </button>
+              </div>
             </div>
-            <div class="text-[11px] font-mono text-slate-500 flex items-center space-x-2">
-              <span id="mDigest1">Awaiting execution</span>
-              <button onclick="inspectMilestone(1)" class="text-slate-400 hover:text-signal-orange underline text-[10px] transition-colors" id="mInspectBtn1" style="display:none;">
-                [Inspect Deliverable Proof]
-              </button>
+            <div class="text-right font-mono text-xs">
+              <span class="text-signal-mint font-semibold text-sm mono-tabular">0.150 SOL</span>
+              <span class="text-[10px] text-slate-500 block">30% contract weight</span>
             </div>
           </div>
-          <div class="text-right font-mono text-xs">
-            <span class="text-signal-mint font-semibold text-sm mono-tabular">0.150 SOL</span>
-            <span class="text-[10px] text-slate-500 block">30% contract weight</span>
+          <div class="w-full bg-chassis-950 rounded-full h-1.5 overflow-hidden border border-chassis-800/60">
+            <div id="mBar1" class="h-full bg-gradient-to-r from-signal-cyan to-signal-mint transition-all duration-700 ease-out" style="width: 0%"></div>
           </div>
         </div>
 
         <!-- M2 Card -->
-        <div class="recessed-well p-4 rounded border border-chassis-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors" id="mCard2">
-          <div class="space-y-1">
-            <div class="flex items-center space-x-2.5">
-              <span class="font-mono text-xs font-bold text-signal-orange">02</span>
-              <span class="font-medium text-white text-xs">Automated unit verification suite & 100% test pass rate</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge2">LOCKED</span>
+        <div class="recessed-well p-4 rounded border border-chassis-800 flex flex-col gap-2 transition-all duration-300" id="mCard2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2.5">
+                <span class="font-mono text-xs font-bold text-signal-orange">02</span>
+                <span class="font-medium text-white text-xs">Automated unit verification suite & 100% test pass rate</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge2">LOCKED</span>
+              </div>
+              <div class="text-[11px] font-mono text-slate-500 flex items-center space-x-2">
+                <span id="mDigest2">Awaiting execution</span>
+                <button onclick="inspectMilestone(2)" class="text-slate-400 hover:text-signal-orange underline text-[10px] transition-colors" id="mInspectBtn2" style="display:none;">
+                  [Inspect Deliverable Proof]
+                </button>
+              </div>
             </div>
-            <div class="text-[11px] font-mono text-slate-500 flex items-center space-x-2">
-              <span id="mDigest2">Awaiting execution</span>
-              <button onclick="inspectMilestone(2)" class="text-slate-400 hover:text-signal-orange underline text-[10px] transition-colors" id="mInspectBtn2" style="display:none;">
-                [Inspect Deliverable Proof]
-              </button>
+            <div class="text-right font-mono text-xs">
+              <span class="text-signal-mint font-semibold text-sm mono-tabular">0.250 SOL</span>
+              <span class="text-[10px] text-slate-500 block">50% contract weight</span>
             </div>
           </div>
-          <div class="text-right font-mono text-xs">
-            <span class="text-signal-mint font-semibold text-sm mono-tabular">0.250 SOL</span>
-            <span class="text-[10px] text-slate-500 block">50% contract weight</span>
+          <div class="w-full bg-chassis-950 rounded-full h-1.5 overflow-hidden border border-chassis-800/60">
+            <div id="mBar2" class="h-full bg-gradient-to-r from-signal-cyan to-signal-mint transition-all duration-700 ease-out" style="width: 0%"></div>
           </div>
         </div>
 
         <!-- M3 Card -->
-        <div class="recessed-well p-4 rounded border border-chassis-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors" id="mCard3">
-          <div class="space-y-1">
-            <div class="flex items-center space-x-2.5">
-              <span class="font-mono text-xs font-bold text-signal-orange">03</span>
-              <span class="font-medium text-white text-xs">Production Pull Request merge & on-chain settlement finality</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge3">LOCKED</span>
+        <div class="recessed-well p-4 rounded border border-chassis-800 flex flex-col gap-2 transition-all duration-300" id="mCard3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2.5">
+                <span class="font-mono text-xs font-bold text-signal-orange">03</span>
+                <span class="font-medium text-white text-xs">Production Pull Request merge & on-chain settlement finality</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge3">LOCKED</span>
+              </div>
+              <div class="text-[11px] font-mono text-slate-500 flex items-center space-x-2">
+                <span id="mDigest3">Awaiting execution</span>
+                <button onclick="inspectMilestone(3)" class="text-slate-400 hover:text-signal-orange underline text-[10px] transition-colors" id="mInspectBtn3" style="display:none;">
+                  [Inspect Deliverable Proof]
+                </button>
+              </div>
             </div>
-            <div class="text-[11px] font-mono text-slate-500 flex items-center space-x-2">
-              <span id="mDigest3">Awaiting execution</span>
-              <button onclick="inspectMilestone(3)" class="text-slate-400 hover:text-signal-orange underline text-[10px] transition-colors" id="mInspectBtn3" style="display:none;">
-                [Inspect Deliverable Proof]
-              </button>
+            <div class="text-right font-mono text-xs">
+              <span class="text-signal-mint font-semibold text-sm mono-tabular">0.100 SOL</span>
+              <span class="text-[10px] text-slate-500 block">20% contract weight</span>
             </div>
           </div>
-          <div class="text-right font-mono text-xs">
-            <span class="text-signal-mint font-semibold text-sm mono-tabular">0.100 SOL</span>
-            <span class="text-[10px] text-slate-500 block">20% contract weight</span>
+          <div class="w-full bg-chassis-950 rounded-full h-1.5 overflow-hidden border border-chassis-800/60">
+            <div id="mBar3" class="h-full bg-gradient-to-r from-signal-cyan to-signal-mint transition-all duration-700 ease-out" style="width: 0%"></div>
           </div>
         </div>
 
@@ -499,104 +556,259 @@
       ]
     };
 
-    // Canvas Swarm Visualizer
+    // Canvas Swarm Visualizer & Dynamic Animation Engine
     const canvas = document.getElementById('topologyCanvas');
     const ctx = canvas.getContext('2d');
     let particles = [];
+    let phase = 0;
+
+    // Ambient floating dust particles
+    const dust = Array.from({ length: 30 }, () => ({
+      x: Math.random() * 480,
+      y: Math.random() * 192,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      size: 1 + Math.random() * 1.5,
+      alpha: 0.15 + Math.random() * 0.25
+    }));
 
     const nodes = {
-      buyer: { x: 70, y: 96, label: 'Buyer', color: '#6366F1' },
-      vault: { x: 240, y: 96, label: 'Solana Vault', color: '#FF5A1F' },
-      worker: { x: 410, y: 96, label: 'Worker', color: '#10B981' },
-      oracle: { x: 240, y: 32, label: 'Oracle', color: '#06B6D4' }
+      buyer: { x: 70, y: 96, label: 'Buyer', color: '#6366F1', offset: 0 },
+      vault: { x: 240, y: 96, label: 'Solana Vault', color: '#FF5A1F', offset: 1.5 },
+      worker: { x: 410, y: 96, label: 'Worker', color: '#10B981', offset: 3.0 },
+      oracle: { x: 240, y: 32, label: 'Oracle', color: '#06B6D4', offset: 4.5 }
     };
+
+    const circuitEdges = [
+      { from: 'buyer', to: 'vault', color: '#6366F1' },
+      { from: 'vault', to: 'worker', color: '#FF5A1F' },
+      { from: 'worker', to: 'oracle', color: '#10B981' },
+      { from: 'oracle', to: 'vault', color: '#06B6D4' }
+    ];
+
+    function drawCircuitTrack(p1, p2, color, active) {
+      ctx.save();
+      // Base dark structural wire
+      ctx.strokeStyle = '#181F2E';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+
+      // High-contrast electric dash stream
+      ctx.strokeStyle = color;
+      ctx.lineWidth = active ? 2.5 : 1.5;
+      ctx.shadowBlur = active ? 14 : 7;
+      ctx.shadowColor = color;
+      ctx.setLineDash([8, 14]);
+      ctx.lineDashOffset = -phase * (active ? 3.5 : 2.0);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    let ambientTimer = 0;
 
     function drawTopology() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      phase += 0.06;
+      ambientTimer++;
 
-      // Draw connection lines
-      ctx.strokeStyle = '#1C2230';
-      ctx.lineWidth = 1.5;
-      
-      // Buyer -> Vault
-      ctx.beginPath();
-      ctx.moveTo(nodes.buyer.x, nodes.buyer.y);
-      ctx.lineTo(nodes.vault.x, nodes.vault.y);
-      ctx.stroke();
+      // 1. Draw ambient cyber dust
+      for (const d of dust) {
+        d.x += d.vx;
+        d.y += d.vy;
+        if (d.x < 0) d.x = canvas.width;
+        if (d.x > canvas.width) d.x = 0;
+        if (d.y < 0) d.y = canvas.height;
+        if (d.y > canvas.height) d.y = 0;
 
-      // Vault -> Worker
-      ctx.beginPath();
-      ctx.moveTo(nodes.vault.x, nodes.vault.y);
-      ctx.lineTo(nodes.worker.x, nodes.worker.y);
-      ctx.stroke();
+        ctx.fillStyle = '#64748B';
+        ctx.globalAlpha = d.alpha;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
 
-      // Worker -> Oracle
-      ctx.beginPath();
-      ctx.moveTo(nodes.worker.x, nodes.worker.y);
-      ctx.lineTo(nodes.oracle.x, nodes.oracle.y);
-      ctx.stroke();
+      // 2. Draw animated electric circuit tracks
+      for (const edge of circuitEdges) {
+        const p1 = nodes[edge.from];
+        const p2 = nodes[edge.to];
+        drawCircuitTrack(p1, p2, edge.color, simState.deployed);
+      }
 
-      // Oracle -> Vault
-      ctx.beginPath();
-      ctx.moveTo(nodes.oracle.x, nodes.oracle.y);
-      ctx.lineTo(nodes.vault.x, nodes.vault.y);
-      ctx.stroke();
-
-      // Draw active particles
+      // 3. Draw active particle packet bursts
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.progress += p.speed;
+        if (p.progress < 0) continue; // Staggered spawn delay
         if (p.progress >= 1) {
           particles.splice(i, 1);
           continue;
         }
+
         const curX = p.from.x + (p.to.x - p.from.x) * p.progress;
         const curY = p.from.y + (p.to.y - p.from.y) * p.progress;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(curX, curY, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
 
-      // Draw nodes
-      for (const key in nodes) {
-        const n = nodes[key];
-        ctx.fillStyle = n.color;
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
-        ctx.fill();
+        // Glowing streak trail
+        const trailLen = 0.08;
+        const tailProgress = Math.max(0, p.progress - trailLen);
+        const tailX = p.from.x + (p.to.x - p.from.x) * tailProgress;
+        const tailY = p.from.y + (p.to.y - p.from.y) * tailProgress;
 
-        ctx.strokeStyle = '#080A0F';
-        ctx.lineWidth = 2;
+        ctx.save();
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size;
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = p.color;
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(curX, curY);
         ctx.stroke();
 
-        ctx.fillStyle = '#94A3B8';
-        ctx.font = '9px "JetBrains Mono"';
+        // Bright particle head
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(curX, curY, p.size * 0.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 4. Draw nodes with radiating sonar pulse rings
+      for (const key in nodes) {
+        const n = nodes[key];
+        
+        // Sonar pulse rings
+        const ringRadius = 7 + ((phase * 10 + n.offset * 6) % 22);
+        const ringAlpha = Math.max(0, 1 - (ringRadius / 25));
+
+        ctx.save();
+        ctx.strokeStyle = n.color;
+        ctx.globalAlpha = ringAlpha * 0.75;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Glowing outer core
+        ctx.save();
+        ctx.fillStyle = n.color;
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = n.color;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Inner white nucleus
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label
+        ctx.fillStyle = '#CBD5E1';
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(n.label, n.x, n.y > 60 ? n.y + 16 : n.y - 10);
+        ctx.fillText(n.label, n.x, n.y > 60 ? n.y + 18 : n.y - 12);
+      }
+
+      // 5. Periodic ambient micro-packets if idle
+      if (ambientTimer % 75 === 0 && particles.length < 3) {
+        const randomEdge = circuitEdges[Math.floor(Math.random() * circuitEdges.length)];
+        particles.push({
+          from: nodes[randomEdge.from],
+          to: nodes[randomEdge.to],
+          progress: 0,
+          speed: 0.02,
+          color: randomEdge.color,
+          size: 2.5
+        });
       }
 
       requestAnimationFrame(drawTopology);
     }
 
-    drawTopology();
+    // Run both requestAnimationFrame and guaranteed 60fps setInterval for headless video capture
+    requestAnimationFrame(drawTopology);
+    setInterval(drawTopology, 16);
 
-    function spawnPacket(from, to, color = '#FF5A1F') {
-      particles.push({
-        from: nodes[from],
-        to: nodes[to],
-        progress: 0,
-        speed: 0.035,
-        color: color
-      });
+    function spawnBurst(from, to, color = '#FF5A1F', count = 7) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          from: nodes[from],
+          to: nodes[to],
+          progress: -i * 0.07, // Staggered stream
+          speed: 0.032 + Math.random() * 0.012,
+          color: color,
+          size: 3.5 + Math.random() * 1.5
+        });
+      }
     }
+
+    // Smooth Number Counter Animator
+    function animateNumber(elementId, startVal, endVal, duration = 650, decimals = 3, suffix = ' SOL') {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const startTime = performance.now();
+      function tick(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+        const current = startVal + (endVal - startVal) * ease;
+        el.innerText = current.toFixed(decimals) + suffix;
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          el.innerText = endVal.toFixed(decimals) + suffix;
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function updateContractProgress(pct, stageText) {
+      const bar = document.getElementById('contractOverallBar');
+      if (bar) bar.style.width = pct + '%';
+      const pctLabel = document.getElementById('lifecyclePercentText');
+      if (pctLabel) pctLabel.innerText = pct + '% Settled';
+      const stageLabel = document.getElementById('lifecycleStageText');
+      if (stageLabel && stageText) stageLabel.innerText = stageText;
+    }
+
+    // Virtual Agent Cursor Helpers
+    window.setVirtualCursor = function(x, y, label = 'Agent Autopilot') {
+      const cursor = document.getElementById('virtualCursor');
+      if (!cursor) return;
+      cursor.style.display = 'flex';
+      cursor.style.top = (y - 4) + 'px';
+      cursor.style.left = (x - 4) + 'px';
+      const lbl = document.getElementById('cursorLabel');
+      if (lbl) lbl.innerText = label;
+    };
+
+    window.triggerCursorClick = function() {
+      const wave = document.getElementById('cursorWave');
+      if (!wave) return;
+      wave.style.transition = 'none';
+      wave.style.transform = 'scale(0.3)';
+      wave.style.opacity = '1';
+      setTimeout(() => {
+        wave.style.transition = 'all 0.45s ease-out';
+        wave.style.transform = 'scale(2.2)';
+        wave.style.opacity = '0';
+      }, 20);
+    };
 
     // Telemetry Logging
     function logTelemetry(msg, color = 'text-slate-300') {
       const feed = document.getElementById('telemetryFeed');
       const time = new Date().toISOString().substring(11, 19);
       const entry = document.createElement('div');
-      entry.className = color;
+      entry.className = color + ' transition-all duration-300';
       entry.innerHTML = `<span class="text-slate-600">[${time}]</span> ${msg}`;
       feed.appendChild(entry);
       feed.scrollTop = feed.scrollHeight;
@@ -621,20 +833,26 @@
       if (simState.deployed) return;
       simState.deployed = true;
       simState.vaultPda = 'Escrow_' + randBase58(8);
-      simState.buyerBal -= 0.500;
+      
+      const prevBuyer = simState.buyerBal;
+      const nextBuyer = prevBuyer - 0.500;
+      simState.buyerBal = nextBuyer;
       simState.vaultBal = 0.500;
 
-      // Audio & Visual pulse
+      // Animate numbers
+      animateNumber('displayBuyerBal', prevBuyer, nextBuyer, 750);
+      animateNumber('displayVaultBal', 0.000, 0.500, 750);
+      updateContractProgress(10, 'Stage 1/3 (Escrow PDA Locked)');
+
+      // Audio & Particle packet burst
       playTone(330, 'triangle', 0.15);
-      spawnPacket('buyer', 'vault', '#6366F1');
+      spawnBurst('buyer', 'vault', '#6366F1', 8);
 
       // Update UI
-      document.getElementById('displayBuyerBal').innerText = simState.buyerBal.toFixed(3) + ' SOL';
-      document.getElementById('displayVaultBal').innerText = simState.vaultBal.toFixed(3) + ' SOL';
       document.getElementById('displayVaultPda').innerText = simState.vaultPda;
       
       const badge = document.getElementById('deskStateBadge');
-      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-orange/10 text-signal-orange border border-signal-orange/20';
+      badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-orange/10 text-signal-orange border border-signal-orange/20 animate-pulse';
       badge.innerText = 'ESCROW ACTIVE';
 
       document.getElementById('topologyStateText').innerText = 'Funds Locked in Escrow';
@@ -645,7 +863,7 @@
 
       const btnExec = document.getElementById('btnExecute');
       btnExec.disabled = false;
-      btnExec.className = 'px-5 py-2.5 rounded bg-signal-mint hover:bg-emerald-500 text-black font-display font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer';
+      btnExec.className = 'px-5 py-2.5 rounded bg-signal-mint hover:bg-emerald-500 text-black font-display font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer bar-glow';
 
       const btnRefund = document.getElementById('btnRefund');
       btnRefund.disabled = false;
@@ -668,20 +886,34 @@
       m.completed = true;
 
       // Packets flow: Worker -> Oracle -> Vault -> Worker
-      spawnPacket('worker', 'oracle', '#06B6D4');
-      setTimeout(() => spawnPacket('oracle', 'vault', '#10B981'), 200);
-      setTimeout(() => spawnPacket('vault', 'worker', '#FF5A1F'), 400);
+      spawnBurst('worker', 'oracle', '#06B6D4', 6);
+      setTimeout(() => spawnBurst('oracle', 'vault', '#10B981', 6), 350);
+      setTimeout(() => spawnBurst('vault', 'worker', '#FF5A1F', 7), 700);
 
       // Sound chime
       playTone(587.33, 'sine', 0.12);
       setTimeout(() => playTone(880, 'sine', 0.18), 120);
 
-      simState.vaultBal -= m.amount;
-      simState.workerBal += m.amount;
+      const prevVault = simState.vaultBal;
+      const nextVault = prevVault - m.amount;
+      const prevWorker = simState.workerBal;
+      const nextWorker = prevWorker + m.amount;
 
-      // Update UI
-      document.getElementById('displayVaultBal').innerText = simState.vaultBal.toFixed(3) + ' SOL';
-      document.getElementById('displayWorkerBal').innerText = simState.workerBal.toFixed(3) + ' SOL';
+      simState.vaultBal = nextVault;
+      simState.workerBal = nextWorker;
+
+      // Animate balances
+      animateNumber('displayVaultBal', prevVault, nextVault, 800);
+      animateNumber('displayWorkerBal', prevWorker, nextWorker, 800);
+
+      // Milestone card progress bar & glowing pulse
+      const mBar = document.getElementById(`mBar${mNum}`);
+      if (mBar) mBar.style.width = '100%';
+
+      const mCard = document.getElementById(`mCard${mNum}`);
+      if (mCard) {
+        mCard.classList.add('active-pulse-card');
+      }
 
       document.getElementById(`mBadge${mNum}`).className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-signal-mint/10 text-signal-mint border border-signal-mint/20 font-semibold';
       document.getElementById(`mBadge${mNum}`).innerText = 'SETTLED';
@@ -690,17 +922,19 @@
       document.getElementById(`mDigest${mNum}`).className = 'text-[11px] font-mono text-signal-mint';
 
       document.getElementById(`mInspectBtn${mNum}`).style.display = 'inline';
-      document.getElementById(`mCard${mNum}`).className = 'recessed-well p-4 rounded border border-signal-mint/30 bg-emerald-950/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
 
       logTelemetry(`Worker submitted Milestone #${mNum} deliverable.`, 'text-slate-300');
       logTelemetry(`Oracle Attestation: SHA-256 Digest ${sha.substring(0, 18)}... verified (PASS)`, 'text-signal-cyan');
       logTelemetry(`SolPay Disbursed: ${m.amount.toFixed(3)} SOL settled to WorkerAgent (Tx: ${tx.substring(0, 20)}...)`, 'text-signal-mint');
 
       simState.step++;
+      const progressSteps = [40, 75, 100];
+      const stageLabels = ['Stage 2/3 (M1 Settled)', 'Stage 3/3 (M2 Regressions Green)', 'Stage 3/3 (Fully Settled)'];
+      updateContractProgress(progressSteps[simState.step - 1], stageLabels[simState.step - 1]);
 
       if (simState.step === simState.milestones.length) {
         logTelemetry(`All contract milestones fulfilled (3/3). Vault zeroed. Finality confirmed in 384ms.`, 'text-signal-orange font-bold');
-        document.getElementById('deskStateBadge').className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-iris/10 text-signal-iris border border-signal-iris/20';
+        document.getElementById('deskStateBadge').className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-iris/20 text-signal-iris border border-signal-iris/30 font-bold';
         document.getElementById('deskStateBadge').innerText = 'ALL SETTLED';
 
         document.getElementById('topologyStateText').innerText = 'All Milestones Settled (100%)';
@@ -720,14 +954,16 @@
       if (!simState.deployed || simState.vaultBal <= 0) return;
 
       playTone(220, 'sawtooth', 0.2);
-      spawnPacket('vault', 'buyer', '#EF4444');
+      spawnBurst('vault', 'buyer', '#EF4444', 8);
 
       const refund = simState.vaultBal;
+      const prevBuyer = simState.buyerBal;
       simState.buyerBal += refund;
       simState.vaultBal = 0.000;
 
-      document.getElementById('displayBuyerBal').innerText = simState.buyerBal.toFixed(3) + ' SOL';
-      document.getElementById('displayVaultBal').innerText = '0.000 SOL';
+      animateNumber('displayBuyerBal', prevBuyer, simState.buyerBal, 700);
+      animateNumber('displayVaultBal', refund, 0.000, 700);
+      updateContractProgress(0, 'Refunded to Client');
 
       document.getElementById('deskStateBadge').className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-red-500/10 text-red-400 border border-red-500/20';
       document.getElementById('deskStateBadge').innerText = 'REFUNDED';
@@ -755,6 +991,8 @@
       document.getElementById('displayVaultBal').innerText = '0.000 SOL';
       document.getElementById('displayVaultPda').innerText = 'Unallocated';
 
+      updateContractProgress(0, 'Stage 0/3 (Idle)');
+
       document.getElementById('deskStateBadge').className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-mint/10 text-signal-mint border border-signal-mint/20';
       document.getElementById('deskStateBadge').innerText = 'READY';
 
@@ -766,7 +1004,10 @@
         document.getElementById(`mDigest${i}`).innerText = 'Awaiting execution';
         document.getElementById(`mDigest${i}`).className = 'text-[11px] font-mono text-slate-500';
         document.getElementById(`mInspectBtn${i}`).style.display = 'none';
-        document.getElementById(`mCard${i}`).className = 'recessed-well p-4 rounded border border-chassis-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+        const card = document.getElementById(`mCard${i}`);
+        card.classList.remove('active-pulse-card');
+        const bar = document.getElementById(`mBar${i}`);
+        if (bar) bar.style.width = '0%';
       }
 
       const btnInit = document.getElementById('btnInit');
