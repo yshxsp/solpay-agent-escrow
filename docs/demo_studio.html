@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SolPay Agent Escrow — Production Demo Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Syne"', 'sans-serif'],
+            sans: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            chassis: {
+              950: '#07090E',
+              900: '#0D1117',
+              850: '#131822',
+              800: '#1C2331',
+              700: '#2A3449',
+              600: '#3D4B66'
+            },
+            signal: {
+              orange: '#FF5A1F',
+              amber: '#F59E0B',
+              mint: '#10B981',
+              cyan: '#06B6D4',
+              iris: '#6366F1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #07090E; color: #E2E8F0; overflow: hidden; }
+    .mono-tabular { font-feature-settings: "tnum" 1, "zero" 1; }
+    .panel-bezel { border: 1px solid #1C2331; background: #0D1117; }
+    .recessed-well { background: #07090E; border: 1px solid #161C28; }
+    .custom-scroll::-webkit-scrollbar { width: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #2A3449; border-radius: 2px; }
+
+    @keyframes radarWave {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .radar-pulse {
+      animation: radarWave 1.6s infinite cubic-bezier(0, 0.2, 0.8, 1);
+    }
+
+    @keyframes activePulseBorder {
+      0%, 100% { border-color: rgba(16,185,129,0.35); box-shadow: 0 0 15px rgba(16,185,129,0.15); }
+      50% { border-color: rgba(6,182,212,0.9); box-shadow: 0 0 30px rgba(6,182,212,0.35); }
+    }
+    .active-pulse-card {
+      animation: activePulseBorder 1.5s infinite ease-in-out !important;
+    }
+
+    @keyframes slideInUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .slide-in-up {
+      animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="w-[1920px] h-[1080px] selection:bg-signal-orange selection:text-white font-sans antialiased text-sm relative">
+
+  <!-- SCENE 1: CINEMATIC TITLE INTRO (0s - 4.5s) -->
+  <div id="sceneIntro" class="absolute inset-0 bg-chassis-950 z-50 flex flex-col items-center justify-center p-12 transition-opacity duration-700">
+    <div class="max-w-4xl w-full text-center space-y-6">
+      
+      <!-- Eyebrow Badge -->
+      <div class="inline-flex items-center space-x-2.5 px-3 py-1 rounded-full border border-chassis-700 bg-chassis-900/90 text-xs font-mono text-slate-300">
+        <span class="w-2 h-2 rounded-full bg-signal-mint animate-pulse"></span>
+        <span class="text-signal-orange font-bold">COLOSSEUM ARENA FALL 2026</span>
+        <span class="text-slate-600">•</span>
+        <span>RADAR HACKATHON</span>
+        <span class="text-slate-600">•</span>
+        <span>SUPERTEAM UKRAINE</span>
+      </div>
+
+      <!-- Main Title -->
+      <div class="space-y-3">
+        <div class="inline-block px-4 py-1.5 rounded bg-signal-orange text-black font-display font-black text-sm uppercase tracking-widest">
+          PROJECT BUIDL #49415
+        </div>
+        <h1 class="text-6xl font-display font-black text-white tracking-tight leading-none">
+          SolPay Agent Escrow
+        </h1>
+        <p class="text-2xl text-slate-300 font-sans font-medium max-w-2xl mx-auto">
+          Autonomous, Milestone-Gated Settlement & Telemetry for Multi-Agent Swarms
+        </p>
+      </div>
+
+      <!-- Key Performance Badges -->
+      <div class="grid grid-cols-3 gap-4 pt-4 max-w-2xl mx-auto font-mono text-xs">
+        <div class="p-3 rounded border border-chassis-800 bg-chassis-900/60">
+          <div class="text-slate-500 text-[11px]">Finality Latency</div>
+          <div class="text-xl font-display font-bold text-white mt-0.5">384<span class="text-signal-mint text-xs">ms</span></div>
+        </div>
+        <div class="p-3 rounded border border-chassis-800 bg-chassis-900/60">
+          <div class="text-slate-500 text-[11px]">Milestone Cost</div>
+          <div class="text-xl font-display font-bold text-white mt-0.5">&lt;$0.001</div>
+        </div>
+        <div class="p-3 rounded border border-chassis-800 bg-chassis-900/60">
+          <div class="text-slate-500 text-[11px]">Test Gate Verification</div>
+          <div class="text-xl font-display font-bold text-signal-mint mt-0.5">100% Pass</div>
+        </div>
+      </div>
+
+      <!-- Author Attribution -->
+      <div class="pt-6 flex items-center justify-center space-x-3 text-xs font-mono text-slate-400">
+        <span>Lead Developer: <strong class="text-white">Dmytro Filonenko</strong> (<a class="text-signal-orange">@yshxspX</a>)</span>
+        <span class="text-slate-700">|</span>
+        <span>Kropyvnytskyi, Ukraine</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: MULTI-AGENT ARCHITECTURE INFOGRAPHIC (4.5s - 9.5s) -->
+  <div id="sceneArch" class="absolute inset-0 bg-chassis-950 z-40 flex flex-col items-center justify-center p-16 transition-opacity duration-700 opacity-0 pointer-events-none">
+    <div class="max-w-5xl w-full space-y-8">
+      
+      <div class="text-center space-y-2">
+        <div class="text-xs font-mono text-signal-orange uppercase tracking-wider font-semibold">
+          SYSTEM ARCHITECTURE & FINANCIAL TRUST LAYER
+        </div>
+        <h2 class="text-4xl font-display font-extrabold text-white">
+          Eliminating Counterparty Risk in the Agentic Economy
+        </h2>
+        <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+          Upfront crypto transfers risk agent crash or hallucination. Post-work transfers risk non-payment. SolPay creates programmatic, mathematically derived PDA trust between autonomous agents.
+        </p>
+      </div>
+
+      <!-- Architecture Topology Blocks -->
+      <div class="grid grid-cols-5 gap-4 items-center pt-4">
+        
+        <!-- Step 1: Buyer Agent -->
+        <div class="panel-bezel p-5 rounded-lg text-center space-y-2 border-t-2 border-t-signal-iris shadow-lg">
+          <div class="w-10 h-10 rounded-full bg-signal-iris/20 text-signal-iris font-mono font-bold flex items-center justify-center mx-auto text-sm">01</div>
+          <h4 class="font-display font-bold text-white text-sm">Buyer Agent</h4>
+          <p class="text-[11px] font-mono text-slate-400 leading-tight">Calls MCP tool: <code class="text-signal-iris">create_escrow()</code></p>
+        </div>
+
+        <!-- Arrow -->
+        <div class="text-center font-mono text-xs text-signal-orange flex flex-col items-center space-y-1">
+          <span>0.50 SOL</span>
+          <span class="text-lg">&rarr;</span>
+        </div>
+
+        <!-- Step 2: Solana PDA Vault -->
+        <div class="panel-bezel p-5 rounded-lg text-center space-y-2 border-t-2 border-t-signal-orange shadow-lg bg-chassis-900/90">
+          <div class="w-10 h-10 rounded-full bg-signal-orange/20 text-signal-orange font-mono font-bold flex items-center justify-center mx-auto text-sm">02</div>
+          <h4 class="font-display font-bold text-white text-sm">Solana PDA Vault</h4>
+          <p class="text-[11px] font-mono text-slate-400 leading-tight">Funds locked trustlessly in program account</p>
+        </div>
+
+        <!-- Arrow -->
+        <div class="text-center font-mono text-xs text-signal-cyan flex flex-col items-center space-y-1">
+          <span>SHA-256</span>
+          <span class="text-lg">&larr;</span>
+        </div>
+
+        <!-- Step 3: Verifier & Worker -->
+        <div class="panel-bezel p-5 rounded-lg text-center space-y-2 border-t-2 border-t-signal-mint shadow-lg">
+          <div class="w-10 h-10 rounded-full bg-signal-mint/20 text-signal-mint font-mono font-bold flex items-center justify-center mx-auto text-sm">03</div>
+          <h4 class="font-display font-bold text-white text-sm">Worker & Oracle</h4>
+          <p class="text-[11px] font-mono text-slate-400 leading-tight">Automated tests pass &rarr; 400ms payout</p>
+        </div>
+
+      </div>
+
+      <!-- Pillars Row -->
+      <div class="grid grid-cols-3 gap-4 pt-4 text-xs font-mono">
+        <div class="recessed-well p-4 rounded border border-chassis-800">
+          <span class="text-signal-orange font-bold block mb-1">1. Program Derived Addresses</span>
+          <span class="text-slate-400">Isolated smart contract accounts with canonical bumps. Zero private key exposure.</span>
+        </div>
+        <div class="recessed-well p-4 rounded border border-chassis-800">
+          <span class="text-signal-cyan font-bold block mb-1">2. Cryptographic Oracle Gates</span>
+          <span class="text-slate-400">Verifies git commit SHAs, vitest assertion outputs, and zero regression exit codes.</span>
+        </div>
+        <div class="recessed-well p-4 rounded border border-chassis-800">
+          <span class="text-signal-mint font-bold block mb-1">3. Automated Timeout Defense</span>
+          <span class="text-slate-400">If contractor crashes or hits rate limits, auto-refund returns remaining funds to client.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCENE 3: LIVE FLIGHT DECK WITH LOWER THIRDS & FLOATING PIP TERMINAL (9.5s - 45s) -->
+  <div id="sceneMain" class="w-full h-full flex flex-col justify-between p-6 transition-opacity duration-500 opacity-0 relative">
+    
+    <!-- Top Instrument Header -->
+    <header class="border-b border-chassis-800 bg-chassis-950/90 pb-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-7 h-7 rounded bg-signal-orange flex items-center justify-center font-display font-extrabold text-black text-sm">SP</div>
+        <div class="flex items-baseline space-x-2">
+          <span class="font-display font-extrabold text-white text-lg">SolPay Agent Escrow</span>
+          <span class="text-[11px] font-mono text-signal-orange font-semibold">Engine v1.0</span>
+        </div>
+        <div class="flex items-center space-x-2 pl-4 border-l border-chassis-800 text-[11px] font-mono text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-signal-mint animate-pulse"></span>
+          <span>Solana Devnet: Slot #329,184,019</span>
+          <span class="text-slate-600">/</span>
+          <span class="text-signal-cyan font-semibold">Latency: 384ms</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 text-xs font-mono">
+        <span class="px-2.5 py-1 rounded bg-chassis-900 border border-chassis-800 text-slate-300">
+          Scene: <strong id="studioSceneTag" class="text-signal-orange">01 | Escrow Deployment</strong>
+        </span>
+        <span class="px-2.5 py-1 rounded bg-signal-mint/10 text-signal-mint border border-signal-mint/20 font-bold">
+          111/111 TESTS VERIFIED
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Live Interactive Grid -->
+    <div class="grid grid-cols-12 gap-6 my-auto items-start">
+      
+      <!-- Left Column: Execution Desk -->
+      <div class="col-span-8 panel-bezel rounded-lg p-5 space-y-4">
+        
+        <!-- Header & State -->
+        <div class="flex items-center justify-between pb-3 border-b border-chassis-800">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="font-display font-bold text-white text-base">Escrow Execution Desk</h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-mint/10 text-signal-mint border border-signal-mint/20" id="deskStateBadge">READY</span>
+            </div>
+            <p class="text-xs text-slate-400">Simulate end-to-end programmatic escrow operations on Solana</p>
+          </div>
+          <div class="flex items-center space-x-4 text-xs font-mono">
+            <div>
+              <span class="text-slate-500">Vault Balance:</span>
+              <span class="text-white font-bold ml-1 text-sm mono-tabular" id="displayVaultBal">0.000 SOL</span>
+            </div>
+            <div>
+              <span class="text-slate-500">Vault PDA:</span>
+              <span class="text-signal-orange ml-1" id="displayVaultPda">Unallocated</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Overall Lifecycle Progress Bar -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+            <span class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-signal-orange animate-pulse"></span>
+              <span>Lifecycle Pipeline:</span>
+              <span id="lifecycleStageText" class="text-white font-semibold">Stage 0/3 (Idle)</span>
+            </span>
+            <span id="lifecyclePercentText" class="text-signal-mint font-bold mono-tabular">0% Settled</span>
+          </div>
+          <div class="w-full bg-chassis-950 rounded-full h-2 border border-chassis-800 overflow-hidden p-0.5">
+            <div id="contractOverallBar" class="h-full rounded-full bg-gradient-to-r from-signal-orange via-signal-cyan to-signal-mint transition-all duration-700 ease-out" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Balances Row -->
+        <div class="grid grid-cols-3 gap-3 text-xs font-mono">
+          <div class="recessed-well p-3 rounded border border-chassis-800 space-y-1">
+            <span class="text-slate-400 font-bold text-signal-iris block">Buyer Agent (Client)</span>
+            <div class="text-lg font-display font-bold text-white mono-tabular" id="displayBuyerBal">5.000 SOL</div>
+          </div>
+          <div class="recessed-well p-3 rounded border border-chassis-800 space-y-1">
+            <span class="text-slate-400 font-bold text-signal-mint block">Worker Agent (Contractor)</span>
+            <div class="text-lg font-display font-bold text-white mono-tabular" id="displayWorkerBal">0.000 SOL</div>
+          </div>
+          <div class="recessed-well p-3 rounded border border-chassis-800 space-y-1">
+            <span class="text-slate-400 font-bold text-signal-cyan block">Oracle Verifier (Attestation)</span>
+            <div class="text-lg font-display font-bold text-signal-mint">TEST GATE (PASS)</div>
+          </div>
+        </div>
+
+        <!-- Milestones List -->
+        <div class="space-y-2">
+          <!-- M1 -->
+          <div class="recessed-well p-3 rounded border border-chassis-800 flex flex-col gap-1.5 transition-all duration-300" id="mCard1">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="font-mono text-xs font-bold text-signal-orange">01</span>
+                <span class="font-medium text-white text-xs">Architecture scaffolding & Anchor account serialization</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge1">LOCKED</span>
+              </div>
+              <span class="text-signal-mint font-semibold text-xs mono-tabular">0.150 SOL</span>
+            </div>
+            <div class="w-full bg-chassis-950 rounded-full h-1 overflow-hidden">
+              <div id="mBar1" class="h-full bg-gradient-to-r from-signal-cyan to-signal-mint transition-all duration-700" style="width: 0%"></div>
+            </div>
+            <div class="text-[10px] font-mono text-slate-500 flex items-center justify-between" id="mSub1">
+              <span id="mDigest1">Awaiting execution</span>
+              <button onclick="inspectMilestone(1)" class="text-signal-orange underline hover:text-white" id="mInspectBtn1" style="display:none;">[Inspect Proof]</button>
+            </div>
+          </div>
+
+          <!-- M2 -->
+          <div class="recessed-well p-3 rounded border border-chassis-800 flex flex-col gap-1.5 transition-all duration-300" id="mCard2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="font-mono text-xs font-bold text-signal-orange">02</span>
+                <span class="font-medium text-white text-xs">Automated unit verification suite & 100% test pass rate</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge2">LOCKED</span>
+              </div>
+              <span class="text-signal-mint font-semibold text-xs mono-tabular">0.250 SOL</span>
+            </div>
+            <div class="w-full bg-chassis-950 rounded-full h-1 overflow-hidden">
+              <div id="mBar2" class="h-full bg-gradient-to-r from-signal-cyan to-signal-mint transition-all duration-700" style="width: 0%"></div>
+            </div>
+            <div class="text-[10px] font-mono text-slate-500 flex items-center justify-between" id="mSub2">
+              <span id="mDigest2">Awaiting execution</span>
+              <button onclick="inspectMilestone(2)" class="text-signal-orange underline hover:text-white" id="mInspectBtn2" style="display:none;">[Inspect Proof]</button>
+            </div>
+          </div>
+
+          <!-- M3 -->
+          <div class="recessed-well p-3 rounded border border-chassis-800 flex flex-col gap-1.5 transition-all duration-300" id="mCard3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="font-mono text-xs font-bold text-signal-orange">03</span>
+                <span class="font-medium text-white text-xs">Production Pull Request merge & on-chain finality</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-chassis-800 text-slate-400" id="mBadge3">LOCKED</span>
+              </div>
+              <span class="text-signal-mint font-semibold text-xs mono-tabular">0.100 SOL</span>
+            </div>
+            <div class="w-full bg-chassis-950 rounded-full h-1 overflow-hidden">
+              <div id="mBar3" class="h-full bg-gradient-to-r from-signal-cyan to-signal-mint transition-all duration-700" style="width: 0%"></div>
+            </div>
+            <div class="text-[10px] font-mono text-slate-500 flex items-center justify-between" id="mSub3">
+              <span id="mDigest3">Awaiting execution</span>
+              <button onclick="inspectMilestone(3)" class="text-signal-orange underline hover:text-white" id="mInspectBtn3" style="display:none;">[Inspect Proof]</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center space-x-3 pt-1">
+          <button id="btnInit" onclick="handleInit()" class="px-5 py-2.5 rounded bg-signal-orange text-black font-display font-bold text-xs uppercase tracking-wider">
+            Deploy Escrow Vault (Lock 0.50 SOL)
+          </button>
+          <button id="btnExecute" onclick="handleExecuteMilestone()" disabled class="px-5 py-2.5 rounded bg-chassis-800 text-slate-500 font-display font-bold text-xs uppercase tracking-wider cursor-not-allowed">
+            Verify & Settle Milestone
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Canvas Swarm & Telemetry -->
+      <div class="col-span-4 space-y-4">
+        
+        <!-- Canvas Visualizer -->
+        <div class="panel-bezel p-4 rounded-lg space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono border-b border-chassis-800 pb-2">
+            <span class="text-slate-300 font-bold flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-signal-mint animate-pulse"></span>
+              <span>Swarm Topology</span>
+            </span>
+            <span class="text-[10px] text-signal-orange" id="topologyStateText">Awaiting Initialization</span>
+          </div>
+          <div class="recessed-well rounded relative h-40 overflow-hidden flex items-center justify-center">
+            <canvas id="topologyCanvas" width="460" height="160" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Telemetry Log Feed -->
+        <div class="panel-bezel p-4 rounded-lg space-y-2">
+          <div class="text-xs font-mono text-slate-300 font-bold flex items-center justify-between border-b border-chassis-800 pb-2">
+            <span>On-Chain Telemetry</span>
+            <span class="text-[10px] text-slate-500">RPC: api.devnet.solana.com</span>
+          </div>
+          <div id="telemetryFeed" class="recessed-well p-3 rounded font-mono text-[10px] h-32 overflow-y-auto custom-scroll space-y-1">
+            <div class="text-slate-500">[00:00:00] Engine idle. Ready for agent instruction.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- FLOATING PICTURE-IN-PICTURE AGENT CLI TERMINAL (Bottom Right) -->
+    <div id="pipTerminal" class="absolute bottom-6 right-8 w-96 panel-bezel rounded-lg shadow-2xl border border-chassis-700 bg-chassis-950/95 overflow-hidden z-30 transition-all duration-300">
+      <div class="bg-chassis-900 px-3 py-1.5 flex items-center justify-between border-b border-chassis-800 text-[10px] font-mono text-slate-400">
+        <div class="flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+          <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span class="ml-2 text-white font-semibold">agent-daemon — zsh</span>
+        </div>
+        <span class="text-signal-mint">LIVE CLI</span>
+      </div>
+      <div id="pipTerminalBody" class="p-3 font-mono text-[11px] h-36 overflow-hidden flex flex-col justify-end space-y-1 text-slate-300">
+        <div class="text-slate-500">$ solpay-agent-daemon --listen</div>
+        <div class="text-cyan-400">&gt; MCP Client connected (Claude Desktop / Gemini)</div>
+      </div>
+    </div>
+
+    <!-- LOWER THIRD PRODUCTION CALLOUT BANNER (Bottom Left) -->
+    <div id="lowerThirdBanner" class="absolute bottom-6 left-8 max-w-xl panel-bezel p-4 rounded-lg border-l-4 border-l-signal-orange shadow-2xl bg-chassis-950/95 z-30 transition-all duration-500 transform">
+      <div class="flex items-start space-x-3">
+        <div class="w-8 h-8 rounded bg-signal-orange/20 text-signal-orange font-mono font-black flex items-center justify-center text-sm" id="ltStepBadge">01</div>
+        <div>
+          <div class="text-[10px] font-mono text-signal-orange uppercase font-bold tracking-wider" id="ltCategory">PROTOCOL INITIALIZATION</div>
+          <h4 class="font-display font-bold text-white text-sm" id="ltTitle">Autonomous PDA Vault Deployment</h4>
+          <p class="text-xs text-slate-300 leading-snug mt-0.5" id="ltDescription">
+            Buyer Agent commits 0.50 SOL to mathematically derived Program Derived Address (PDA) with zero human intervention.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCENE 4: CINEMATIC OUTRO & TEST PROOFS (45s - 50s) -->
+  <div id="sceneOutro" class="absolute inset-0 bg-chassis-950 z-50 flex flex-col items-center justify-center p-12 transition-opacity duration-700 opacity-0 pointer-events-none">
+    <div class="max-w-4xl w-full text-center space-y-6">
+      
+      <div class="inline-flex items-center space-x-2 px-3 py-1 rounded bg-signal-mint/10 text-signal-mint border border-signal-mint/20 font-mono text-xs font-bold">
+        <span>100% PRODUCTION VERIFIED</span>
+      </div>
+
+      <h2 class="text-5xl font-display font-black text-white tracking-tight">
+        Ready for Colosseum Arena & Superteam Demo Day
+      </h2>
+
+      <!-- Proof Grid -->
+      <div class="grid grid-cols-3 gap-4 max-w-2xl mx-auto font-mono text-xs pt-2">
+        <div class="recessed-well p-4 rounded border border-chassis-800 text-left">
+          <span class="text-emerald-400 font-bold block mb-1">✔ 111 Unit Tests</span>
+          <span class="text-slate-400 text-[11px]">100% pass rate in studio pipeline (zero failures)</span>
+        </div>
+        <div class="recessed-well p-4 rounded border border-chassis-800 text-left">
+          <span class="text-cyan-400 font-bold block mb-1">✔ MCP Agent Tool</span>
+          <span class="text-slate-400 text-[11px]">Out-of-the-box support for Claude, Cursor, and AGY</span>
+        </div>
+        <div class="recessed-well p-4 rounded border border-chassis-800 text-left">
+          <span class="text-signal-orange font-bold block mb-1">✔ Security Audited</span>
+          <span class="text-slate-400 text-[11px]">Signer verification, canonical bump, checked math</span>
+        </div>
+      </div>
+
+      <!-- Links & CTA -->
+      <div class="pt-4 space-y-2">
+        <div class="text-sm font-mono text-slate-300">
+          Source Code: <strong class="text-signal-orange">github.com/yshxsp/solpay-agent-escrow</strong>
+        </div>
+        <div class="text-sm font-mono text-slate-300">
+          Live Interactive Simulator: <strong class="text-signal-cyan">yshxsp.github.io/solpay-agent-escrow</strong>
+        </div>
+        <div class="text-xs font-mono text-slate-500 pt-2">
+          Dmytro Filonenko (@yshxspX) • Payout: DkM86ES17UmPuGAmUsGr86XUgbrBb53aMuYE2vGJ2ZUV
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INSPECTOR MODAL -->
+  <div id="inspectorModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="panel-bezel rounded-lg max-w-xl w-full p-6 space-y-4 border border-chassis-700 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-chassis-800">
+        <div>
+          <h4 class="font-display font-bold text-white text-base" id="inspectorTitle">Milestone Attestation</h4>
+          <span class="text-xs font-mono text-signal-orange">Cryptographic Verification Proof</span>
+        </div>
+        <button id="btnCloseModalX" onclick="closeInspector()" class="text-slate-400 hover:text-white font-mono text-lg px-2">✕</button>
+      </div>
+
+      <div class="recessed-well p-4 rounded font-mono text-xs text-slate-300 space-y-2 max-h-80 overflow-y-auto" id="inspectorBody"></div>
+
+      <div class="flex justify-end pt-2">
+        <button id="btnCloseModal" onclick="closeInspector()" class="px-4 py-2 rounded bg-chassis-800 hover:bg-chassis-700 text-slate-200 font-mono text-xs font-semibold">
+          Close Inspector
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIRTUAL AGENT CURSOR -->
+  <div id="virtualCursor" class="fixed z-[99999] pointer-events-none transition-all duration-300 ease-out flex items-center space-x-2" style="top: -100px; left: -100px; display: none;">
+    <div class="relative">
+      <svg class="w-6 h-6 drop-shadow-[0_0_12px_rgba(255,90,31,1)] filter" viewBox="0 0 24 24" fill="none">
+        <path d="M4 2L20 10L12 12L10 20L4 2Z" fill="#FF5A1F" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+      <div id="cursorWave" class="absolute -top-3 -left-3 w-12 h-12 rounded-full border-2 border-signal-orange opacity-0 pointer-events-none"></div>
+    </div>
+    <div class="bg-chassis-950/95 text-[10px] font-mono px-2 py-0.5 rounded border border-signal-orange text-signal-orange shadow-2xl font-bold tracking-wide" id="cursorLabel">Agent Autopilot</div>
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    // State
+    const simState = {
+      deployed: false,
+      step: 0,
+      buyerBal: 5.000,
+      workerBal: 0.000,
+      vaultBal: 0.000,
+      vaultPda: null,
+      milestones: [
+        {
+          id: 1,
+          title: 'Architecture scaffolding & Anchor account serialization',
+          amount: 0.150,
+          completed: false,
+          proofDetails: {
+            commit: 'commit 7b37a07: feat(core): implement AgentEscrow PDA seeds',
+            files: ['src/escrow.ts', 'src/types.ts'],
+            tests: '2/2 tests passed (48ms)',
+            sha: '0x27f8598e2d0fe4e2c60ed497b39a8c174f8b9192'
+          }
+        },
+        {
+          id: 2,
+          title: 'Automated unit verification suite & 100% test pass rate',
+          amount: 0.250,
+          completed: false,
+          proofDetails: {
+            commit: 'commit 94cf21a: test: automated milestone timeout & verification gates',
+            files: ['tests/escrow.test.js'],
+            tests: 'Oracle Verifier attestation confirmed (exit 0)',
+            sha: '0x1dc3b1549aec6dbac5d24e019f8a371c664b0f92'
+          }
+        },
+        {
+          id: 3,
+          title: 'Production Pull Request merge & on-chain settlement finality',
+          amount: 0.100,
+          completed: false,
+          proofDetails: {
+            commit: 'commit dfffb36: merge: verified deliverable into main branch',
+            files: ['dist/demo.js', 'package.json'],
+            tests: 'All CI checks green. Ready for on-chain disbursement',
+            sha: '0xe83421199a0cb9721fd4091a92e10bf6c3189912'
+          }
+        }
+      ]
+    };
+
+    // Canvas Swarm Engine
+    const canvas = document.getElementById('topologyCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let phase = 0;
+
+    const dust = Array.from({ length: 25 }, () => ({
+      x: Math.random() * 460,
+      y: Math.random() * 160,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: (Math.random() - 0.5) * 0.5,
+      size: 1 + Math.random() * 1.5,
+      alpha: 0.2 + Math.random() * 0.3
+    }));
+
+    const nodes = {
+      buyer: { x: 60, y: 80, label: 'Buyer', color: '#6366F1', offset: 0 },
+      vault: { x: 230, y: 80, label: 'PDA Vault', color: '#FF5A1F', offset: 1.5 },
+      worker: { x: 400, y: 80, label: 'Worker', color: '#10B981', offset: 3.0 },
+      oracle: { x: 230, y: 28, label: 'Oracle', color: '#06B6D4', offset: 4.5 }
+    };
+
+    const circuitEdges = [
+      { from: 'buyer', to: 'vault', color: '#6366F1' },
+      { from: 'vault', to: 'worker', color: '#FF5A1F' },
+      { from: 'worker', to: 'oracle', color: '#10B981' },
+      { from: 'oracle', to: 'vault', color: '#06B6D4' }
+    ];
+
+    function drawCircuit(p1, p2, color, active) {
+      ctx.save();
+      ctx.strokeStyle = '#181F2E';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = active ? 2.5 : 1.5;
+      ctx.shadowBlur = active ? 14 : 7;
+      ctx.shadowColor = color;
+      ctx.setLineDash([8, 14]);
+      ctx.lineDashOffset = -phase * (active ? 3.5 : 2.0);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTopology() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      phase += 0.06;
+
+      // Dust
+      for (const d of dust) {
+        d.x += d.vx;
+        d.y += d.vy;
+        if (d.x < 0) d.x = canvas.width;
+        if (d.x > canvas.width) d.x = 0;
+        if (d.y < 0) d.y = canvas.height;
+        if (d.y > canvas.height) d.y = 0;
+
+        ctx.fillStyle = '#64748B';
+        ctx.globalAlpha = d.alpha;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+
+      // Edges
+      for (const edge of circuitEdges) {
+        drawCircuit(nodes[edge.from], nodes[edge.to], edge.color, simState.deployed);
+      }
+
+      // Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.progress += p.speed;
+        if (p.progress < 0) continue;
+        if (p.progress >= 1) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        const curX = p.from.x + (p.to.x - p.from.x) * p.progress;
+        const curY = p.from.y + (p.to.y - p.from.y) * p.progress;
+        const tailX = p.from.x + (p.to.x - p.from.x) * Math.max(0, p.progress - 0.08);
+        const tailY = p.from.y + (p.to.y - p.from.y) * Math.max(0, p.progress - 0.08);
+
+        ctx.save();
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size;
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = p.color;
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(curX, curY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(curX, curY, p.size * 0.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Nodes
+      for (const key in nodes) {
+        const n = nodes[key];
+        const ringRadius = 7 + ((phase * 10 + n.offset * 6) % 22);
+        const ringAlpha = Math.max(0, 1 - (ringRadius / 25));
+
+        ctx.save();
+        ctx.strokeStyle = n.color;
+        ctx.globalAlpha = ringAlpha * 0.75;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = n.color;
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = n.color;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 6.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#CBD5E1';
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.label, n.x, n.y > 50 ? n.y + 18 : n.y - 10);
+      }
+
+      requestAnimationFrame(drawTopology);
+    }
+    requestAnimationFrame(drawTopology);
+    setInterval(drawTopology, 16);
+
+    function spawnBurst(from, to, color = '#FF5A1F', count = 7) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          from: nodes[from],
+          to: nodes[to],
+          progress: -i * 0.07,
+          speed: 0.035 + Math.random() * 0.01,
+          color: color,
+          size: 3.5 + Math.random() * 1.5
+        });
+      }
+    }
+
+    function animateNumber(elementId, startVal, endVal, duration = 650, decimals = 3, suffix = ' SOL') {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const startTime = performance.now();
+      function tick(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const current = startVal + (endVal - startVal) * ease;
+        el.innerText = current.toFixed(decimals) + suffix;
+        if (progress < 1) requestAnimationFrame(tick);
+        else el.innerText = endVal.toFixed(decimals) + suffix;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function updateContractProgress(pct, stageText) {
+      const bar = document.getElementById('contractOverallBar');
+      if (bar) bar.style.width = pct + '%';
+      const pctLabel = document.getElementById('lifecyclePercentText');
+      if (pctLabel) pctLabel.innerText = pct + '% Settled';
+      const stageLabel = document.getElementById('lifecycleStageText');
+      if (stageLabel && stageText) stageLabel.innerText = stageText;
+    }
+
+    function logTelemetry(msg, color = 'text-slate-300') {
+      const feed = document.getElementById('telemetryFeed');
+      const time = new Date().toISOString().substring(11, 19);
+      const entry = document.createElement('div');
+      entry.className = color;
+      entry.innerHTML = `<span class="text-slate-600">[${time}]</span> ${msg}`;
+      feed.appendChild(entry);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function logCli(cmd, output, color = 'text-emerald-400') {
+      const body = document.getElementById('pipTerminalBody');
+      const entry1 = document.createElement('div');
+      entry1.className = 'text-slate-400';
+      entry1.innerText = '$ ' + cmd;
+      const entry2 = document.createElement('div');
+      entry2.className = color;
+      entry2.innerText = '> ' + output;
+      body.appendChild(entry1);
+      body.appendChild(entry2);
+      while (body.children.length > 6) {
+        body.removeChild(body.firstChild);
+      }
+    }
+
+    function setLowerThird(badge, category, title, desc, borderClass = 'border-l-signal-orange') {
+      const banner = document.getElementById('lowerThirdBanner');
+      banner.className = `absolute bottom-6 left-8 max-w-xl panel-bezel p-4 rounded-lg border-l-4 ${borderClass} shadow-2xl bg-chassis-950/95 z-30 transition-all duration-300 slide-in-up`;
+      document.getElementById('ltStepBadge').innerText = badge;
+      document.getElementById('ltCategory').innerText = category;
+      document.getElementById('ltTitle').innerText = title;
+      document.getElementById('ltDescription').innerText = desc;
+    }
+
+    // Handlers
+    function handleInit() {
+      if (simState.deployed) return;
+      simState.deployed = true;
+      simState.vaultPda = 'Escrow_8kM9q2zX';
+      
+      const prevBuyer = simState.buyerBal;
+      const nextBuyer = 4.500;
+      simState.buyerBal = nextBuyer;
+      simState.vaultBal = 0.500;
+
+      animateNumber('displayBuyerBal', prevBuyer, nextBuyer, 700);
+      animateNumber('displayVaultBal', 0.000, 0.500, 700);
+      updateContractProgress(10, 'Stage 1/3 (Vault PDA Locked)');
+
+      spawnBurst('buyer', 'vault', '#6366F1', 8);
+
+      document.getElementById('displayVaultPda').innerText = simState.vaultPda;
+      document.getElementById('deskStateBadge').className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-orange/10 text-signal-orange border border-signal-orange/20 animate-pulse';
+      document.getElementById('deskStateBadge').innerText = 'ESCROW ACTIVE';
+      document.getElementById('topologyStateText').innerText = 'Funds Locked in Escrow';
+
+      document.getElementById('btnInit').disabled = true;
+      document.getElementById('btnInit').className = 'px-5 py-2.5 rounded bg-chassis-800 text-slate-500 font-display font-bold text-xs uppercase cursor-not-allowed';
+
+      const btnExec = document.getElementById('btnExecute');
+      btnExec.disabled = false;
+      btnExec.className = 'px-5 py-2.5 rounded bg-signal-mint hover:bg-emerald-500 text-black font-display font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer';
+
+      logTelemetry(`Vault PDA Initialized: ${simState.vaultPda}`, 'text-signal-orange');
+      logTelemetry(`Deposit Confirmed: 0.500 SOL locked from BuyerAgent (Tx: 4bF8...9qL)`, 'text-signal-mint');
+      logCli('solpay create-escrow --amount 0.500 --milestones 3', 'Vault PDA initialized: Escrow_8kM9q2zX (Tx confirmed in 384ms)');
+
+      setLowerThird('01', 'PROTOCOL INITIALIZATION', 'Autonomous PDA Vault Deployment', 'Buyer Agent commits 0.50 SOL to mathematically derived PDA with zero human intervention.');
+      document.getElementById('studioSceneTag').innerText = '02 | Milestone 1 Attestation';
+    }
+
+    function handleExecuteMilestone() {
+      if (!simState.deployed || simState.step >= simState.milestones.length) return;
+
+      const m = simState.milestones[simState.step];
+      const mNum = simState.step + 1;
+      m.completed = true;
+
+      spawnBurst('worker', 'oracle', '#06B6D4', 6);
+      setTimeout(() => spawnBurst('oracle', 'vault', '#10B981', 6), 300);
+      setTimeout(() => spawnBurst('vault', 'worker', '#FF5A1F', 7), 600);
+
+      const prevVault = simState.vaultBal;
+      const nextVault = prevVault - m.amount;
+      const prevWorker = simState.workerBal;
+      const nextWorker = prevWorker + m.amount;
+
+      simState.vaultBal = nextVault;
+      simState.workerBal = nextWorker;
+
+      animateNumber('displayVaultBal', prevVault, nextVault, 800);
+      animateNumber('displayWorkerBal', prevWorker, nextWorker, 800);
+
+      const mBar = document.getElementById(`mBar${mNum}`);
+      if (mBar) mBar.style.width = '100%';
+
+      const mCard = document.getElementById(`mCard${mNum}`);
+      if (mCard) mCard.classList.add('active-pulse-card');
+
+      document.getElementById(`mBadge${mNum}`).className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-signal-mint/10 text-signal-mint border border-signal-mint/20 font-semibold';
+      document.getElementById(`mBadge${mNum}`).innerText = 'SETTLED';
+
+      document.getElementById(`mDigest${mNum}`).innerText = `Proof Digest: ${m.proofDetails.sha.substring(0, 18)}... (VERIFIED)`;
+      document.getElementById(`mDigest${mNum}`).className = 'text-[10px] font-mono text-signal-mint';
+      document.getElementById(`mInspectBtn${mNum}`).style.display = 'inline';
+
+      logTelemetry(`Worker submitted Milestone #${mNum} deliverable.`, 'text-slate-300');
+      logTelemetry(`Oracle Attestation: SHA-256 Digest ${m.proofDetails.sha.substring(0, 18)}... (PASS)`, 'text-signal-cyan');
+      logTelemetry(`Disbursed: ${m.amount.toFixed(3)} SOL settled to WorkerAgent (sub-400ms finality)`, 'text-signal-mint');
+
+      simState.step++;
+      const progressSteps = [40, 75, 100];
+      const stageLabels = ['Stage 2/3 (M1 Settled)', 'Stage 3/3 (M2 Regressions Green)', 'Stage 3/3 (Fully Settled)'];
+      updateContractProgress(progressSteps[simState.step - 1], stageLabels[simState.step - 1]);
+
+      if (mNum === 1) {
+        logCli('solpay verify-milestone --id 1', 'Oracle Attested SHA-256: 0x27f8... | Disbursed 0.150 SOL');
+        setLowerThird('02', 'ORACLE ATTESTATION', 'Milestone #1 Cryptographic Verification', 'Worker passes Anchor scaffolding test suite. Oracle verifies SHA-256 digest and releases 0.150 SOL.', 'border-l-signal-cyan');
+        document.getElementById('studioSceneTag').innerText = '03 | Regression Verification';
+      } else if (mNum === 2) {
+        logCli('solpay verify-milestone --id 2', 'Regression suite exit code 0 | Disbursed 0.250 SOL');
+        setLowerThird('03', 'REGRESSION TESTING', 'Milestone #2 Automated Test Gate', 'Continuous integration assertions pass with zero failures. Contract disburses 0.250 SOL to contractor.', 'border-l-signal-mint');
+        document.getElementById('studioSceneTag').innerText = '04 | Final Settlement';
+      } else if (mNum === 3) {
+        logCli('solpay verify-milestone --id 3', 'PR Merged. Contract closed. Vault zeroed (0.000 SOL)');
+        setLowerThird('04', 'CONTRACT FINALITY', 'Milestone #3 PR Merge & Settlement', 'All milestones fulfilled. Vault balance safely zeroed out. Total elapsed execution latency: 384ms.', 'border-l-signal-iris');
+        document.getElementById('studioSceneTag').innerText = '05 | Contract Finalized (100%)';
+
+        document.getElementById('deskStateBadge').className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-signal-iris/20 text-signal-iris border border-signal-iris/30 font-bold';
+        document.getElementById('deskStateBadge').innerText = 'ALL SETTLED';
+        document.getElementById('topologyStateText').innerText = 'All Milestones Settled (100%)';
+
+        const btnExec = document.getElementById('btnExecute');
+        btnExec.disabled = true;
+        btnExec.innerText = 'Contract Fully Settled';
+        btnExec.className = 'px-5 py-2.5 rounded bg-chassis-800 text-slate-500 font-display font-bold text-xs uppercase cursor-not-allowed';
+      }
+    }
+
+    function inspectMilestone(mId) {
+      const m = simState.milestones[mId - 1];
+      if (!m || !m.completed) return;
+      document.getElementById('inspectorTitle').innerText = `Milestone #${m.id}: ${m.title}`;
+      const body = document.getElementById('inspectorBody');
+      body.innerHTML = `
+        <div class="space-y-1">
+          <span class="text-slate-500 block text-[10px]">GIT COMMIT RECEIPT:</span>
+          <div class="text-white bg-chassis-950 p-2 rounded border border-chassis-800">${m.proofDetails.commit}</div>
+        </div>
+        <div class="space-y-1">
+          <span class="text-slate-500 block text-[10px]">CHANGED VERIFIED FILES:</span>
+          <div class="text-signal-cyan bg-chassis-950 p-2 rounded border border-chassis-800">${m.proofDetails.files.join(', ')}</div>
+        </div>
+        <div class="space-y-1">
+          <span class="text-slate-500 block text-[10px]">TEST SUITE RESULT:</span>
+          <div class="text-signal-mint bg-chassis-950 p-2 rounded border border-chassis-800 font-semibold">${m.proofDetails.tests}</div>
+        </div>
+        <div class="space-y-1">
+          <span class="text-slate-500 block text-[10px]">ORACLE VERIFIER ATTRIBUTED DIGEST:</span>
+          <div class="text-signal-orange bg-chassis-950 p-2 rounded border border-chassis-800 text-[11px]">${m.proofDetails.sha}</div>
+        </div>
+      `;
+      document.getElementById('inspectorModal').classList.remove('hidden');
+    }
+
+    function closeInspector() {
+      document.getElementById('inspectorModal').classList.add('hidden');
+    }
+
+    // Virtual Cursor
+    window.setVirtualCursor = function(x, y, label = 'Agent Autopilot') {
+      const cursor = document.getElementById('virtualCursor');
+      if (!cursor) return;
+      cursor.style.display = 'flex';
+      cursor.style.top = (y - 4) + 'px';
+      cursor.style.left = (x - 4) + 'px';
+      const lbl = document.getElementById('cursorLabel');
+      if (lbl) lbl.innerText = label;
+    };
+
+    window.triggerCursorClick = function() {
+      const wave = document.getElementById('cursorWave');
+      if (!wave) return;
+      wave.style.transition = 'none';
+      wave.style.transform = 'scale(0.3)';
+      wave.style.opacity = '1';
+      setTimeout(() => {
+        wave.style.transition = 'all 0.45s ease-out';
+        wave.style.transform = 'scale(2.2)';
+        wave.style.opacity = '0';
+      }, 20);
+    };
+
+    // Studio Director Scene Switcher
+    window.showScene = function(sceneId) {
+      const scenes = ['sceneIntro', 'sceneArch', 'sceneMain', 'sceneOutro'];
+      scenes.forEach(s => {
+        const el = document.getElementById(s);
+        if (s === sceneId) {
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        } else {
+          el.style.opacity = '0';
+          el.style.pointerEvents = 'none';
+        }
+      });
+    };
+  </script>
+</body>
+</html>
