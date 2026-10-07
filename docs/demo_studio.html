@@ -941,6 +941,10 @@
           el.style.pointerEvents = 'none';
         }
       });
+      const cursor = document.getElementById('virtualCursor');
+      if (cursor && (sceneId === 'sceneIntro' || sceneId === 'sceneArch' || sceneId === 'sceneOutro')) {
+        cursor.style.display = 'none';
+      }
     };
   </script>
 </body>
